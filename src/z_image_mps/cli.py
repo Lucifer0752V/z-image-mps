@@ -69,11 +69,9 @@ def configure_attention(pipe: ZImagePipeline, backend: str) -> None:
 
 def load_pipeline(args, device: str, dtype: torch.dtype) -> ZImagePipeline:
     load_kwargs = {"low_cpu_mem_usage": False}
-    # Newer diffusers uses dtype; older versions still expect torch_dtype.
-    if "dtype" in inspect.signature(ZImagePipeline.from_pretrained).parameters:
-        load_kwargs["dtype"] = dtype
-    else:
-        load_kwargs["torch_dtype"] = dtype
+    params = inspect.signature(ZImagePipeline.from_pretrained).parameters
+    dtype_arg = "dtype" if "dtype" in params else "torch_dtype"
+    load_kwargs[dtype_arg] = dtype
 
     pipe = ZImagePipeline.from_pretrained("Tongyi-MAI/Z-Image-Turbo", **load_kwargs)
 
