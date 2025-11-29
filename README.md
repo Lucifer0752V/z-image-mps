@@ -7,6 +7,7 @@ Generate images locally with **Tongyi-MAI/Z-Image-Turbo** using a tiny CLI that 
 - Sensible defaults for Z-Image-Turbo (9 steps, CFG 0.0)
 - Aspect presets (multiples of 16) plus manual height/width overrides
 - Optional `torch.compile`, FlashAttention 2/3 switches, and CPU offload (CUDA)
+- LoRA support with included Technically-Color Z-Image Turbo LoRA for enhanced colors
 - `uv`-first: run without installing, or install/edit via `uv pip install -e .`
 
 ## Quick start
@@ -31,14 +32,14 @@ Images are saved to `output/` by default with timestamped filenames.
 
 ## Gradio demo
 
-Launch a simple UI (generate-only, no LoRA/edit):
+Launch a simple UI with LoRA support:
 ```bash
 uv run z-image-mps-gradio --host 0.0.0.0 --port 7860
 # or
 uv run python -m z_image_mps.gradio_app
 ```
 
-The UI exposes prompt, negative prompt, steps, guidance (defaults to 0.0), aspect/custom size, seed, device selection, attention backend (SDPA/Flash2/Flash3), optional `torch.compile`, and CUDA CPU-offload.
+The UI exposes prompt, negative prompt, steps, guidance (defaults to 0.0), aspect/custom size, seed, device selection, attention backend (SDPA/Flash2/Flash3), optional `torch.compile`, CUDA CPU-offload, and LoRA selection with scale adjustment.
 
 ## CLI reference
 
@@ -59,6 +60,8 @@ z-image-mps --prompt "..." [options]
 --attention-backend     sdpa | flash2 | flash3
 --compile               Try torch.compile() on the DiT transformer
 --cpu-offload           Enable CPU offload (CUDA only)
+--lora                  LoRA name or path to load (e.g., 'Technically-Color-Z-Image-Turbo')
+--lora-scale            LoRA adapter weight scale (typically 0.0-2.0, default: 1.0)
 ```
 
 Notes:
@@ -82,7 +85,61 @@ z-image-mps -p "Nordic fjord at dawn, misty" --num-images 3 --seed 123
 
 # FlashAttention 2 and compiled transformer (CUDA)
 z-image-mps -p "A futuristic tram in the rain" --attention-backend flash2 --compile
+
+# Using Technically-Color LoRA for enhanced colors
+z-image-mps -p "A vibrant sunset over the ocean" --lora Technically-Color-Z-Image-Turbo --lora-scale 1.2
 ```
+
+## Using Additional LoRAs
+
+### Downloading LoRAs
+
+You can download additional LoRAs from HuggingFace or other sources. The recommended approach is to use the HuggingFace CLI:
+
+```bash
+# Download a LoRA to the loras directory
+huggingface-cli download <repository-id> --local-dir loras/<lora-name>
+
+# Example: Download another LoRA
+huggingface-cli download oj-thai/tech-manga-diffusion --local-dir loras/tech-manga-diffusion
+```
+
+### Manual Installation
+
+If you have a LoRA file (`.safetensors` or `.bin`), you can manually add it:
+
+1. Create a directory for your LoRA:
+```bash
+mkdir -p loras/my-custom-lora
+```
+
+2. Copy the LoRA file into the directory:
+```bash
+cp /path/to/your/lora.safetensors loras/my-custom-lora/
+```
+
+### Using Downloaded LoRAs
+
+Once a LoRA is in the `loras/` directory, you can use it with the CLI:
+
+```bash
+# Use the LoRA by directory name
+z-image-mps -p "Your prompt here" --lora my-custom-lora
+
+# Adjust LoRA strength
+z-image-mps -p "Your prompt here" --lora my-custom-lora --lora-scale 0.8
+```
+
+In the Gradio UI, the LoRA will automatically appear in the dropdown menu after you restart the app.
+
+### LoRA Scale Guidelines
+
+- `0.0` - LoRA disabled (same as not using it)
+- `0.5` - Subtle effect
+- `1.0` - Full strength (default)
+- `1.5-2.0` - Strong effect (may cause artifacts depending on the LoRA)
+
+Always experiment with different scales to find the best result for your specific LoRA and prompt combination.
 
 ## Demo output
 

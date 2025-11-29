@@ -1,4 +1,5 @@
 import argparse
+import os
 from functools import lru_cache
 from types import SimpleNamespace
 from typing import Optional, Tuple
@@ -17,18 +18,33 @@ def _coerce_int(value: Optional[int], default: int) -> int:
         return default
 
 
+def get_available_loras():
+    """Get list of available LoRA directories."""
+    loras = ["None"]
+    loras_dir = "loras"
+    if os.path.exists(loras_dir):
+        for item in os.listdir(loras_dir):
+            if os.path.isdir(os.path.join(loras_dir, item)):
+                loras.append(item)
+    return loras
+
+
 @lru_cache(maxsize=1)
 def _cached_pipeline(
     device_choice: str,
     attention_backend: str,
     compile_flag: bool,
     cpu_offload: bool,
+    lora_name: str,
+    lora_scale: float,
 ) -> Tuple:
     device, dtype = pick_device(device_choice)
     dummy_args = SimpleNamespace(
         attention_backend=attention_backend,
         compile=compile_flag,
         cpu_offload=cpu_offload,
+        lora=lora_name if lora_name != "None" else None,
+        lora_scale=lora_scale,
     )
     pipe = load_pipeline(dummy_args, device, dtype)
     return pipe, device, dtype
@@ -47,6 +63,8 @@ def generate_image(
     device_choice: str,
     compile_flag: bool,
     cpu_offload: bool,
+    lora_name: str,
+    lora_scale: float,
 ):
     steps = max(1, int(steps))
     guidance = float(guidance)
@@ -57,7 +75,7 @@ def generate_image(
         w = _coerce_int(width, 1024)
 
     pipe, device, dtype = _cached_pipeline(
-        device_choice, attention_backend, compile_flag, cpu_offload
+        device_choice, attention_backend, compile_flag, cpu_offload, lora_name, lora_scale
     )
 
     if seed is None or seed == 0:
@@ -67,11 +85,12 @@ def generate_image(
 
     generator = create_generator(device, seed)
 
+    lora_info = f", lora={lora_name}, lora_scale={lora_scale}" if lora_name != "None" else ""
     info = (
         f"device={device}, dtype={dtype}, steps={steps}, "
         f"guidance={guidance}, size={w}x{h}, seed={seed}, "
         f"attn={attention_backend}, compile={compile_flag}, "
-        f"cpu_offload={cpu_offload}"
+        f"cpu_offload={cpu_offload}{lora_info}"
     )
 
     with torch.inference_mode():
@@ -142,6 +161,20 @@ def build_app():
                 )
                 compile_flag = gr.Checkbox(label="torch.compile DiT (CUDA best)", value=False)
                 cpu_offload = gr.Checkbox(label="CPU offload (CUDA only)", value=False)
+
+                lora_name = gr.Dropdown(
+                    label="LoRA",
+                    choices=get_available_loras(),
+                    value="None",
+                )
+                lora_scale = gr.Slider(
+                    label="LoRA Scale",
+                    minimum=0.0,
+                    maximum=2.0,
+                    value=1.0,
+                    step=0.1,
+                )
+
                 run_btn = gr.Button("Generate", variant="primary")
 
         with gr.Row():
@@ -163,6 +196,8 @@ def build_app():
                 device_choice,
                 compile_flag,
                 cpu_offload,
+                lora_name,
+                lora_scale,
             ],
             outputs=[image_out, info],
         )

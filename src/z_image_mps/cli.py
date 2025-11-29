@@ -3,7 +3,7 @@ import inspect
 import os
 import secrets
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 from diffusers import ZImagePipeline
@@ -67,6 +67,17 @@ def configure_attention(pipe: ZImagePipeline, backend: str) -> None:
         print(f"Warning: could not enable {backend} attention ({exc}); using default SDPA.")
 
 
+def load_lora(pipe: ZImagePipeline, lora_path: Optional[str], lora_scale: float = 1.0) -> None:
+    """Load a LoRA into the pipeline if specified."""
+    if lora_path:
+        try:
+            pipe.load_lora_weights(lora_path)
+            pipe.set_adapters(["default"], adapter_weights=[lora_scale])
+            print(f"Loaded LoRA from {lora_path} with scale {lora_scale}")
+        except Exception as exc:
+            print(f"Warning: Failed to load LoRA from {lora_path}: {exc}")
+
+
 def load_pipeline(args, device: str, dtype: torch.dtype) -> ZImagePipeline:
     load_kwargs = {"low_cpu_mem_usage": False}
     params = inspect.signature(ZImagePipeline.from_pretrained).parameters
@@ -76,6 +87,26 @@ def load_pipeline(args, device: str, dtype: torch.dtype) -> ZImagePipeline:
         load_kwargs["dtype"] = dtype
 
     pipe = ZImagePipeline.from_pretrained("Tongyi-MAI/Z-Image-Turbo", **load_kwargs)
+
+    # Load LoRA if specified
+    if hasattr(args, 'lora') and args.lora:
+        lora_path = os.path.join("loras", args.lora)
+        if not os.path.exists(lora_path):
+            # Try to find the .safetensors file in the directory
+            if os.path.isdir(lora_path):
+                safetensors_files = [f for f in os.listdir(lora_path) if f.endswith('.safetensors')]
+                if safetensors_files:
+                    lora_path = os.path.join(lora_path, safetensors_files[0])
+                else:
+                    print(f"Warning: No .safetensors file found in {lora_path}")
+                    lora_path = None
+            else:
+                print(f"Warning: LoRA path not found: {lora_path}")
+                lora_path = None
+
+        if lora_path:
+            lora_scale = getattr(args, 'lora_scale', 1.0)
+            load_lora(pipe, lora_path, lora_scale)
 
     # Decode in float32 to avoid NaNs/RuntimeWarnings when weights use lower precision.
     if dtype != torch.float32 and hasattr(pipe, "vae"):
@@ -228,6 +259,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--cpu-offload",
         action="store_true",
         help="Enable CPU offload (CUDA only) to reduce VRAM usage.",
+    )
+    parser.add_argument(
+        "--lora",
+        type=str,
+        default=None,
+        help="LoRA name or path to load (e.g., 'Technically-Color-Z-Image-Turbo' for the built-in LoRA).",
+    )
+    parser.add_argument(
+        "--lora-scale",
+        type=float,
+        default=1.0,
+        help="LoRA adapter weight scale (typically 0.0-2.0).",
     )
 
     return parser
