@@ -8,6 +8,7 @@ import gradio as gr
 import torch
 
 from .cli import ASPECT_RATIOS, create_generator, load_pipeline, pick_device
+from .lora_utils import load_lora_weights
 
 
 def _coerce_int(value: Optional[int], default: int) -> int:
@@ -35,19 +36,50 @@ def _cached_pipeline(
     attention_backend: str,
     compile_flag: bool,
     cpu_offload: bool,
-    lora_name: str,
-    lora_scale: float,
 ) -> Tuple:
     device, dtype = pick_device(device_choice)
     dummy_args = SimpleNamespace(
         attention_backend=attention_backend,
         compile=compile_flag,
         cpu_offload=cpu_offload,
-        lora=lora_name if lora_name != "None" else None,
-        lora_scale=lora_scale,
     )
     pipe = load_pipeline(dummy_args, device, dtype)
     return pipe, device, dtype
+
+
+def _resolve_lora_path(lora_name: str) -> Optional[str]:
+    """Match CLI behavior: resolve a LoRA directory/name to a .safetensors file."""
+    if not lora_name or lora_name == "None":
+        return None
+    lora_path = os.path.join("loras", lora_name)
+    if not os.path.exists(lora_path):
+        return None
+    if os.path.isdir(lora_path):
+        safetensors_files = [f for f in os.listdir(lora_path) if f.endswith(".safetensors")]
+        return os.path.join(lora_path, safetensors_files[0]) if safetensors_files else None
+    if lora_path.endswith(".safetensors"):
+        return lora_path
+    return None
+
+
+def _ensure_lora(pipe, lora_name: str, lora_scale: float):
+    """
+    Reuse the loaded pipeline while swapping LoRAs:
+    - unload previous merge if present
+    - load requested LoRA if provided
+    """
+    merger = getattr(pipe, "_lora_merger", None)
+
+    if merger:
+        merger.unload_lora_weights()
+        pipe._lora_merger = None
+
+    lora_path = _resolve_lora_path(lora_name)
+    if lora_path:
+        pipe._lora_merger = load_lora_weights(pipe, lora_path, lora_scale)
+        print(f"Loaded LoRA from {lora_path} with scale {lora_scale}")
+
+    return pipe
 
 
 def generate_image(
@@ -74,9 +106,8 @@ def generate_image(
         h = _coerce_int(height, 1024)
         w = _coerce_int(width, 1024)
 
-    pipe, device, dtype = _cached_pipeline(
-        device_choice, attention_backend, compile_flag, cpu_offload, lora_name, lora_scale
-    )
+    pipe, device, dtype = _cached_pipeline(device_choice, attention_backend, compile_flag, cpu_offload)
+    pipe = _ensure_lora(pipe, lora_name, lora_scale)
 
     if seed is None or seed == 0:
         seed = torch.seed() % (2**63 - 1)
@@ -171,7 +202,7 @@ def build_app():
                     label="LoRA Scale",
                     minimum=0.0,
                     maximum=2.0,
-                    value=1.0,
+                    value=1.3,
                     step=0.1,
                 )
 
